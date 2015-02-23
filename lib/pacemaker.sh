@@ -48,7 +48,7 @@ pacemaker_cluster_stop()
 		if [ $? -ne 0 ]; then
 			continue
 		fi
-		phd_cmd_exec "yum list installed 2>&1 | grep 'grep pcs'" "$node"
+		phd_cmd_exec "yum list installed 2>&1 | grep -q 'pcs'" "$node"
 		if [ $? -ne 0 ]; then
 			phd_cmd_exec "yum install -y pcs > /dev/null 2>&1" "$node"
 		fi
@@ -110,6 +110,7 @@ pacemaker_verify_nodes()
 			phd_log LOG_INFO "waiting for $node to come online"
 			return 1
 		fi
+		phd_cmd_exec "chkconfig pacemaker on" "$execnode"
 	done
 	return 0
 }
@@ -193,6 +194,7 @@ pacemaker_fence_init()
 	local script="${PHD_TMP_DIR}/FENCE_AGENTS"
 
 	write_fence_cmds "$script"
+	phd_batch_node_cp "$script" "$script" "$node"
 	phd_script_exec "$script" "$node"
 	if [ $? -ne 0 ]; then
 		phd_exit_failure "Failed to initialize cluster fencing."

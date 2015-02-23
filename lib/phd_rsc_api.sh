@@ -55,7 +55,6 @@ phd_rsc_clear_failcounts()
 	for rsc in $(echo $rsc_list); do
 		phd_cmd_exec "crm_resource -C -r  $rsc"
 		phd_cmd_exec "pcs resource failcount reset $rsc"
-		
 	done
 }
 
@@ -80,10 +79,11 @@ phd_rsc_disable()
 	local node=$2
 	local rc
 
-	phd_cmd_exec "pcs resource disable $rsc" "$node" > /dev/null 2>&1
+	phd_log LOG_DEBUG "stopping resource $rsc on node $node"
+	phd_cmd_exec "pcs resource disable $rsc" "$node" 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
-		phd_cmd_exec "pcs resource stop $rsc" "$node" > /dev/null 2>&1
+		phd_cmd_exec "pcs resource stop $rsc" "$node" 2>&1
 		rc=$?
 	fi
 	return $?
@@ -263,7 +263,7 @@ phd_rsc_verify_start_all()
 {
 	local timeout=$1
 	local node=$2
-	local rsc_list=$(phd_rsc_list 0 "$node")
+	local rsc_list=$(phd_rsc_list 1 "$node")
 	local lapse_sec=0
 	local stop_time=0
 	local rsc
@@ -333,7 +333,7 @@ phd_rsc_verify_stop_all()
 
 	phd_rsc_detect_failures "$node"
 	if [ $? -ne 0 ]; then
-		phd_log LOG_ERR "Resource failures detected during stop"
+		phd_log LOG_INFO "Resource failures detected during stop"
 		return 1
 	fi
 

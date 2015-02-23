@@ -267,7 +267,7 @@ scenario_cluster_init()
 		pacemaker_cluster_start
 		pacemaker_fence_init
 		phd_log LOG_NOTICE "Success: Cluster started"
-	else 
+	else
 		phd_log LOG_NOTICE "Success: Skipping cluster start"
 
 	fi
@@ -278,6 +278,7 @@ scenario_distribute_api()
 	local api_files=$(ls ${PHDCONST_ROOT}/lib/*)
 	local nodes=$(definition_nodes)
 	local file
+	local files=""
 
 	phd_log LOG_NOTICE "============================" 
 	phd_log LOG_NOTICE "==== Distribute PHD API ====" 
@@ -285,15 +286,15 @@ scenario_distribute_api()
 
 	for file in $(echo $api_files); do
 		file=$(basename $file)
-		# copy it remotely
-		phd_node_cp "${PHDCONST_ROOT}/lib/${file}" "${PHD_TMP_DIR}/lib/${file}" "$nodes" "755"
-		if [ $? -ne 0 ]; then
-			phd_exit_failure "Failed to distribute phd API to nodes. Exiting."
-		fi
+                files="$files $file"
 
-		# also copy it locally
+		# copy them locally
 		cp "${PHDCONST_ROOT}/lib/${file}" "${PHD_TMP_DIR}/lib/${file}"
 	done
+
+	# copy them remotely
+	phd_batch_node_cp "${PHD_TMP_DIR}" "${PHD_TMP_DIR}" "$nodes"
+
 	phd_log LOG_NOTICE "Success: API distributed to nodes ($nodes)"
 }
 
@@ -331,10 +332,7 @@ scenario_script_exec()
 		fi
 
 		nodes=$(eval echo "\$${SENV_PREFIX}_target${script_num}")
-		if [ -z "$nodes" ]; then
-			nodes=$(definition_nodes)
-		fi
-		if [ "$nodes" = "all" ]; then
+		if [ -z "$nodes" -o "$nodes" = "all" ]; then
 			nodes=$(definition_nodes)
 		fi
 

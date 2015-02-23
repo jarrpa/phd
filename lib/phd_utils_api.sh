@@ -295,6 +295,26 @@ phd_node_cp()
 	return 0
 }
 
+
+phd_batch_node_cp()
+{
+	local src=$1
+	local dest=$2
+	local nodes=$3
+	local mode=$4
+	local tgz="$(mktemp).tgz"
+
+       	tar -czpPf $tgz $src
+        phd_node_cp "$tgz" "$tgz" "$nodes"
+        if [ $? -ne 0 ]; then
+                phd_log LOG_ERR "Failed to distribute: $src"
+		return 1
+        fi
+	phd_cmd_exec "tar -xzpPf $tgz" "$nodes"
+	rm -f $tgz
+	return 0
+}
+
 phd_script_exec()
 {
 	local script=$1
@@ -306,8 +326,6 @@ phd_script_exec()
 
 	for node in $(echo $nodes); do
 		phd_log LOG_INFO "executing script \"$script\" on node \"$node\""		
-		phd_cmd_exec "mkdir -p $dir" "$node" > /dev/null 2>&1
-		phd_node_cp "$script" "$script" "$node" "755" > /dev/null 2>&1
 		output=$(phd_cmd_exec "$script" "$node")
 		rc=$?
 		phd_log_script_output "$output" $(basename $script) $rc $node
